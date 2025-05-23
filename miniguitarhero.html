@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini Guitar Hero with Music</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+    }
+    #container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin-top: 20px;
+    }
+    #game {
+      width: 400px;
+      height: 600px;
+      border: 2px solid white;
+      background: #222;
+      display: flex;
+      position: relative;
+    }
+    .lane {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      border-left: 1px solid #444;
+      border-right: 1px solid #444;
+    }
+    .note {
+      width: 100%;
+      height: 20px;
+      background: red;
+      position: absolute;
+      top: -20px;
+    }
+    .hit-bar {
+      position: absolute;
+      bottom: 0;
+      height: 20px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+    }
+    #side-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-left: 30px;
+      margin-top: 10px;
+    }
+    #score {
+      margin-bottom: 20px;
+      font-size: 1.2em;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mini Guitar Hero</h1>
+  <div id="container">
+    <div id="game">
+      <div class="lane" id="lane0"><div class="hit-bar"></div></div>
+      <div class="lane" id="lane1"><div class="hit-bar"></div></div>
+      <div class="lane" id="lane2"><div class="hit-bar"></div></div>
+      <div class="lane" id="lane3"><div class="hit-bar"></div></div>
+    </div>
+    <div id="side-panel">
+      <div id="score">Score: 0</div>
+      <button onclick="startGame()">Start</button>
+    </div>
+  </div>
+  <script>
+    const lanes = [
+      document.getElementById('lane0'),
+      document.getElementById('lane1'),
+      document.getElementById('lane2'),
+      document.getElementById('lane3')
+    ];
+    const keys = ['a', 's', 'd', 'f'];
+    let score = 0;
+    const fallingSpeed = 4;
+    const noteInterval = 30;
+
+    const audio = new Audio('song.mp3'); // Replace with your actual file
+    let startTime = 0;
+    let activeNotes = [];
+    let spawned = 0;
+
+    // Notes: [time in seconds, lane index]
+    const notesChart = [
+      [1.0, 0],
+      [1.5, 1],
+      [2.0, 2],
+      [2.5, 3],
+      [3.0, 0],
+      [3.5, 1],
+      [4.0, 2],
+      [4.5, 3],
+      [5.0, 0],
+      [5.5, 1],
+      [6.0, 2],
+      [6.5, 3],
+      [7.0, 0],
+      [7.5, 1],
+      [8.0, 2],
+      [8.5, 3],
+      [9.0, 0],
+      [9.5, 1],
+      [10.0, 2],
+      [10.5, 3],
+      [11.0, 0],
+      [11.5, 1],
+      [12.0, 2],
+      [12.5, 3],
+      [13.0, 0],
+      [13.5, 1],
+      [14.0, 2],
+      [14.5, 3],
+      [15.0, 0],
+      [15.5, 1],
+      // Add more notes here...
+    ];
+
+    function createNote(laneIndex) {
+      const note = document.createElement('div');
+      note.classList.add('note');
+      note.style.top = '-20px';
+      lanes[laneIndex].appendChild(note);
+      activeNotes.push({ el: note, lane: laneIndex, top: -20 });
+    }
+
+    function updateNotes() {
+      for (let i = activeNotes.length - 1; i >= 0; i--) {
+        const note = activeNotes[i];
+        note.top += fallingSpeed;
+        note.el.style.top = note.top + 'px';
+
+        if (note.top > 600) {
+          note.el.remove();
+          activeNotes.splice(i, 1);
+        }
+      }
+    }
+
+    function spawnNotesFromChart(currentTime) {
+      while (spawned < notesChart.length && notesChart[spawned][0] <= currentTime) {
+        const [_, lane] = notesChart[spawned];
+        createNote(lane);
+        spawned++;
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      const laneIndex = keys.indexOf(key);
+      if (laneIndex !== -1) {
+        const laneNotes = activeNotes.filter(n => n.lane === laneIndex);
+        if (laneNotes.length > 0) {
+          const note = laneNotes[0];
+          if (note.top >= 560 && note.top <= 600) {
+            note.el.remove();
+            activeNotes.splice(activeNotes.indexOf(note), 1);
+            score += 100;
+            document.getElementById('score').textContent = 'Score: ' + score;
+          }
+        }
+      }
+    });
+
+    function gameLoop() {
+      const currentTime = (Date.now() - startTime) / 1000;
+      spawnNotesFromChart(currentTime);
+      updateNotes();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+      audio.play();
+      startTime = Date.now();
+      score = 0;
+      document.getElementById('score').textContent = 'Score: 0';
+      activeNotes = [];
+      spawned = 0;
+      gameLoop();
+    }
+  </script>
+</body>
+</html>

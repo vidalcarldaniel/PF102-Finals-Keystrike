@@ -10,6 +10,18 @@
       color: #fff;
       font-family: sans-serif;
       text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    #start-page, #mode-page, #main-game {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #start-page {
+      display: flex;
     }
     #container {
       display: flex;
@@ -60,24 +72,43 @@
     button {
       padding: 10px 20px;
       font-size: 1em;
+      margin: 10px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>Mini Guitar Hero</h1>
-  <div id="container">
-    <div id="game">
-      <div class="lane" id="lane0"><div class="hit-bar"></div></div>
-      <div class="lane" id="lane1"><div class="hit-bar"></div></div>
-      <div class="lane" id="lane2"><div class="hit-bar"></div></div>
-      <div class="lane" id="lane3"><div class="hit-bar"></div></div>
-    </div>
-    <div id="side-panel">
-      <div id="score">Score: 0</div>
-      <button onclick="startGame()">Start</button>
+  <!-- Start Page -->
+  <div id="start-page">
+    <h1>Welcome to Mini Guitar Hero</h1>
+    <button onclick="goToModeSelection()">Start Game</button>
+  </div>
+
+  <!-- Mode Selection Page -->
+  <div id="mode-page">
+    <h1>Select Difficulty</h1>
+    <button onclick="selectMode('easy')">Easy</button>
+    <button onclick="selectMode('medium')">Medium</button>
+    <button onclick="selectMode('hard')">Hard</button>
+  </div>
+
+  <!-- Main Game Page -->
+  <div id="main-game">
+    <h1>Mini Guitar Hero</h1>
+    <div id="container">
+      <div id="game">
+        <div class="lane" id="lane0"><div class="hit-bar"></div></div>
+        <div class="lane" id="lane1"><div class="hit-bar"></div></div>
+        <div class="lane" id="lane2"><div class="hit-bar"></div></div>
+        <div class="lane" id="lane3"><div class="hit-bar"></div></div>
+      </div>
+      <div id="side-panel">
+        <div id="score">Score: 0</div>
+        <button onclick="startGame()">Start</button>
+      </div>
     </div>
   </div>
+
   <script>
     const lanes = [
       document.getElementById('lane0'),
@@ -87,48 +118,33 @@
     ];
     const keys = ['a', 's', 'd', 'f'];
     let score = 0;
-    const fallingSpeed = 4;
-    const noteInterval = 30;
-
-    const audio = new Audio('song.mp3'); // Replace with your actual file
-    let startTime = 0;
+    let fallingSpeed = 4;
     let activeNotes = [];
     let spawned = 0;
+    let startTime = 0;
+    const audio = new Audio('song.mp3'); // Replace with your actual file
+    let notesChart = [];
 
-    // Notes: [time in seconds, lane index]
-    const notesChart = [
-      [1.0, 0],
-      [1.5, 1],
-      [2.0, 2],
-      [2.5, 3],
-      [3.0, 0],
-      [3.5, 1],
-      [4.0, 2],
-      [4.5, 3],
-      [5.0, 0],
-      [5.5, 1],
-      [6.0, 2],
-      [6.5, 3],
-      [7.0, 0],
-      [7.5, 1],
-      [8.0, 2],
-      [8.5, 3],
-      [9.0, 0],
-      [9.5, 1],
-      [10.0, 2],
-      [10.5, 3],
-      [11.0, 0],
-      [11.5, 1],
-      [12.0, 2],
-      [12.5, 3],
-      [13.0, 0],
-      [13.5, 1],
-      [14.0, 2],
-      [14.5, 3],
-      [15.0, 0],
-      [15.5, 1],
-      // Add more notes here...
-    ];
+    // Predefined charts (same structure, different timing density)
+    const notesCharts = {
+      easy: [
+        [1.0, 0], [2.0, 1], [3.0, 2], [4.0, 3],
+        [5.0, 0], [6.0, 1], [7.0, 2], [8.0, 3],
+        [9.0, 0], [10.0, 1], [11.0, 2], [12.0, 3]
+      ],
+      medium: [
+        [1.0, 0], [1.5, 1], [2.0, 2], [2.5, 3],
+        [3.0, 0], [3.5, 1], [4.0, 2], [4.5, 3],
+        [5.0, 0], [5.5, 1], [6.0, 2], [6.5, 3],
+        [7.0, 0], [7.5, 1]
+      ],
+      hard: [
+        [0.5, 0], [0.8, 1], [1.1, 2], [1.4, 3],
+        [1.7, 0], [2.0, 1], [2.3, 2], [2.6, 3],
+        [2.9, 0], [3.2, 1], [3.5, 2], [3.8, 3],
+        [4.1, 0], [4.4, 1], [4.7, 2], [5.0, 3]
+      ]
+    };
 
     function createNote(laneIndex) {
       const note = document.createElement('div');
@@ -143,7 +159,6 @@
         const note = activeNotes[i];
         note.top += fallingSpeed;
         note.el.style.top = note.top + 'px';
-
         if (note.top > 600) {
           note.el.remove();
           activeNotes.splice(i, 1);
@@ -191,6 +206,26 @@
       activeNotes = [];
       spawned = 0;
       gameLoop();
+    }
+
+    function goToModeSelection() {
+      document.getElementById('start-page').style.display = 'none';
+      document.getElementById('mode-page').style.display = 'flex';
+    }
+
+    function selectMode(mode) {
+      if (mode === 'easy') {
+        fallingSpeed = 3;
+        notesChart = notesCharts.easy;
+      } else if (mode === 'medium') {
+        fallingSpeed = 4;
+        notesChart = notesCharts.medium;
+      } else if (mode === 'hard') {
+        fallingSpeed = 6;
+        notesChart = notesCharts.hard;
+      }
+      document.getElementById('mode-page').style.display = 'none';
+      document.getElementById('main-game').style.display = 'flex';
     }
   </script>
 </body>
